@@ -38,104 +38,90 @@
         const remoteVideo = document.getElementById('remoteVideo');
         let localStream;
         let peerConnection;
-
-        const constraints = {
-            video: true,
-            audio: true
-        };
-
-        const servers = {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' }
-            ]
-        };
+        const iceServers = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
         // Get the user's media stream
-        navigator.mediaDevices.getUserMedia(constraints)
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
             .then(stream => {
                 console.log('Local stream obtained');
-                localVideo.srcObject = stream;
                 localStream = stream;
-                document.getElementById('startButton').disabled = true;
-                socket.emit('ready', roomName); // Notify the server that the local peer is ready
+                localVideo.srcObject = stream;
+                socket.emit('join', roomName); // Notify server that the user has joined the room
             })
             .catch(error => {
                 console.error('Error accessing media devices:', error);
-                alert('Could not access your camera and microphone. Please ensure they are connected and enabled.');
+                alert('Could not access your camera and microphone.');
             });
 
-        socket.on('ready', () => {
-            document.getElementById('startButton').disabled = false; // Enable the start button when both peers are ready
+        socket.on('joined', () => {
+            document.getElementById('startButton').disabled = false; // Enable the start button when joined
         });
 
-        // Start call when the "Start Call" button is clicked
+        // Start the call
         document.getElementById('startButton').onclick = () => {
             if (localStream) {
-                startCall();
+                peerConnection = new RTCPeerConnection(iceServers);
+                localStream.getTracks().forEach(track => {
+                    console.log('Adding track:', track);
+                    peerConnection.addTrack(track, localStream);
+                });
+
+                peerConnection.onicecandidate = event => {
+                    if (event.candidate) {
+                        console.log('Sending ICE candidate:', event.candidate);
+                        socket.emit('candidate', { candidate: event.candidate, room: roomName });
+                    }
+                };
+
+                peerConnection.ontrack = event => {
+                    console.log('Received remote track:', event.streams[0]);
+                    remoteVideo.srcObject = event.streams[0]; // Set the remote video stream
+                };
+
+                peerConnection.createOffer()
+                    .then(offer => {
+                        console.log('Creating offer:', offer);
+                        return peerConnection.setLocalDescription(offer);
+                    })
+                    .then(() => {
+                        console.log('Sending offer');
+                        socket.emit('offer', { offer: peerConnection.localDescription, room: roomName });
+                    })
+                    .catch(error => {
+                        console.error('Error creating offer:', error);
+                    });
             } else {
-                alert('Local stream not initialized. Please check your camera and microphone.');
+                console.error('Local stream is not initialized.');
             }
         };
 
-        function startCall() {
-            console.log('Starting call');
-            peerConnection = new RTCPeerConnection(servers);
-
-            localStream.getTracks().forEach(track => {
-                peerConnection.addTrack(track, localStream);
-            });
-
-            peerConnection.onicecandidate = event => {
-                if (event.candidate) {
-                    console.log('Sending ICE candidate');
-                    socket.emit('candidate', { candidate: event.candidate, room: roomName });
-                }
-            };
-
-            peerConnection.ontrack = event => {
-                console.log('Received remote stream');
-                remoteVideo.srcObject = event.streams[0];
-            };
-
-            peerConnection.createOffer()
-                .then(offer => {
-                    console.log('Created offer:', offer);
-                    return peerConnection.setLocalDescription(offer);
-                })
+        socket.on('offer', data => {
+            peerConnection = new RTCPeerConnection(iceServers);
+            peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer))
                 .then(() => {
-                    console.log('Sending offer');
-                    socket.emit('offer', { offer: peerConnection.localDescription, room: roomName });
-                })
-                .catch(error => {
-                    console.error('Error creating offer:', error);
+                    if (localStream) {
+                        localStream.getTracks().forEach(track => {
+                            console.log('Adding track:', track);
+                            peerConnection.addTrack(track, localStream);
+                        });
+                    }
                 });
-        }
-
-        // Handle the offer from another peer
-        socket.on('offer', offer => {
-            console.log('Received offer:', offer);
-            peerConnection = new RTCPeerConnection(servers);
-            peerConnection.setRemoteDescription(offer);
-
-            localStream.getTracks().forEach(track => {
-                peerConnection.addTrack(track, localStream);
-            });
 
             peerConnection.onicecandidate = event => {
                 if (event.candidate) {
-                    console.log('Sending ICE candidate');
+                    console.log('Sending ICE candidate:', event.candidate);
                     socket.emit('candidate', { candidate: event.candidate, room: roomName });
                 }
             };
 
             peerConnection.ontrack = event => {
-                console.log('Received remote stream');
-                remoteVideo.srcObject = event.streams[0];
+                console.log('Received remote track:', event.streams[0]);
+                remoteVideo.srcObject = event.streams[0]; // Set the remote video stream
             };
 
             peerConnection.createAnswer()
                 .then(answer => {
-                    console.log('Created answer:', answer);
+                    console.log('Creating answer:', answer);
                     return peerConnection.setLocalDescription(answer);
                 })
                 .then(() => {
@@ -147,20 +133,17 @@
                 });
         });
 
-        // Handle the answer from the other peer
-        socket.on('answer', answer => {
-            console.log('Received answer:', answer);
-            peerConnection.setRemoteDescription(answer);
+        socket.on('answer', data => {
+            peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer))
+                .catch(error => {
+                    console.error('Error setting remote description:', error);
+                });
         });
 
-        // Handle ICE candidates received from the other peer
-        socket.on('candidate', candidate => {
-            console.log('Received ICE candidate:', candidate);
-            const iceCandidate = new RTCIceCandidate(candidate);
-            peerConnection.addIceCandidate(iceCandidate)
-                .catch(error => {
-                    console.error('Error adding received ICE candidate', error);
-                });
+        socket.on('candidate', data => {
+            const candidate = new RTCIceCandidate(data.candidate);
+            peerConnection.addIceCandidate(candidate)
+                .catch(error => console.error('Error adding ICE candidate:', error));
         });
     </script>
 </body>
