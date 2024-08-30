@@ -1,20 +1,50 @@
 <!DOCTYPE html>
-<html lang="en">
+
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Join a Video Call</title>
+
+    <meta charset="utf-8">
+    <meta name="description" content="WebRTC code samples">
+    <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+    <meta itemprop="description" content="Client-side WebRTC code samples">
+    <meta itemprop="image" content="../../../images/webrtc-icon-192x192.png">
+    <meta itemprop="name" content="WebRTC code samples">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta id="theme-color" name="theme-color" content="#ffffff">
+
+    <base target="_blank">
+
+    <title>Peer connection between two tabs</title>
+
+    <link rel="icon" sizes="192x192" href="../../../images/webrtc-icon-192x192.png">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="../../../css/main.css"/>
+    <link rel="stylesheet" href="css/main.css"/>
+
 </head>
+
 <body>
-    <h1>Join a Video Call</h1>
-    <form action="{{ url_for('join') }}" method="POST">
-        <label for="username">Your Name:</label>
-        <input type="text" id="username" name="username" required>
-        <br><br>
-        <label for="room_name">Room Name:</label>
-        <input type="text" id="room_name" name="room_name" required>
-        <br><br>
-        <button type="submit">Join Room</button>
-    </form>
+
+<div id="container">
+    
+    
+
+    <video id="localVideo" playsinline autoplay muted></video>
+    <video id="remoteVideo" playsinline autoplay></video>
+
+    <div class="box">
+        <button id="startButton">Start</button>
+        <button id="hangupButton">Hang Up</button>
+    </div>
+
+    <p>Click the start button in two tabs (of the same browser; can be in different windows) to make a call</p>
+
+   
+</div>
+
+<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+<script src="{{url_for('static', filename='main.js')}}"></script>
+
+<script src="{{url_for('static', filename='ga.js')}}"></script>
 </body>
 </html>
