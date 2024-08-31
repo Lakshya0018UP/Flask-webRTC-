@@ -1,31 +1,28 @@
-# Flask-SocketIO Chat Application
+# WebRTC Video Call Application
 
-## Overview
+This repository contains a simple WebRTC video call application built using Flask and Socket.IO. The application allows users to connect with each other via video calls within a specific room.
 
-This is a simple Flask-SocketIO chat application that allows users to join specific chat rooms, communicate, and manage WebRTC connections using offers, answers, and ICE candidates. The application provides basic routes to handle room joining and uses Socket.IO for real-time bi-directional communication.
+## Features
 
-## Prerequisites
+- Real-time video calling using WebRTC.
+- Room-based connection system to allow private video calls.
+- Simple and clean interface.
 
-To run this application, you need to have the following installed:
+## Getting Started
+
+Follow these instructions to get a copy of the project up and running on your local machine for development and testing purposes.
+
+### Prerequisites
+
+Ensure you have the following installed on your machine:
 
 - Python 3.x
 - Flask
 - Flask-SocketIO
 
-You can install the necessary packages using pip:
+### Installation
 
-```bash
-pip install Flask Flask-SocketIO
+1. Clone this repository to your local machine:
 
-/project_directory
-│
-├── app.py                # Main application file
-├── templates/
-│   ├── index.html        # Home page template
-│   └── room.html         # Room page template
-└── static/
-    └── main.css          # (Optional) CSS for styling
-
-git clone https://github.com/yourusername/flask-socketio-chat.git
-
-
+   ```bash
+   git clone https://github.com/yourusername/webrtc-video-call.git
